@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 // Create a new ticket
 app.post('/api/tickets', async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, priority } = req.body;
     
     if (!title || !description) {
       return res.status(400).json({
@@ -34,7 +34,8 @@ app.post('/api/tickets', async (req, res) => {
 
     const ticket = await Ticket.create({
       title,
-      description
+      description,
+      priority: priority || 'medium'
     });
 
     res.status(201).json({
@@ -49,13 +50,51 @@ app.post('/api/tickets', async (req, res) => {
   }
 });
 
-// Get all tickets
+// Get all tickets with optional filtering
 app.get('/api/tickets', async (req, res) => {
   try {
-    const tickets = await Ticket.find().sort({ createdAt: -1 });
+    const { status, priority } = req.query;
+    const query = {};
+    
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+
+    const tickets = await Ticket.find(query).sort({ createdAt: -1 });
     res.status(200).json({
       status: 'success',
       data: tickets
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+});
+
+// Update ticket status
+app.patch('/api/tickets/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const ticket = await Ticket.findByIdAndUpdate(
+      req.params.id,
+      { 
+        status,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
+
+    if (!ticket) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Ticket not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: ticket
     });
   } catch (error) {
     res.status(500).json({
@@ -74,7 +113,7 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
     error: 'Something went wrong!',
