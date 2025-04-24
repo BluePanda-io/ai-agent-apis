@@ -3,7 +3,8 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 const connectDB = require('./db');
-const Ticket = require('./models/Ticket');
+const mongoService = require('./services/mongoService');
+const pineconeService = require('./services/pineconeService');
 
 // Connect to MongoDB
 connectDB();
@@ -20,10 +21,10 @@ app.get('/', (req, res) => {
   });
 });
 
-// Create a new ticket
+// Create a new ticket (both in MongoDB and Pinecone)
 app.post('/api/tickets', async (req, res) => {
   try {
-    const { title, description, priority } = req.body;
+    const { title, description } = req.body;
     
     if (!title || !description) {
       return res.status(400).json({
@@ -32,11 +33,11 @@ app.post('/api/tickets', async (req, res) => {
       });
     }
 
-    const ticket = await Ticket.create({
-      title,
-      description,
-      priority: priority || 'medium'
-    });
+    // Create ticket in MongoDB
+    const ticket = await mongoService.createTicket(title, description);
+    
+    // Add ticket to Pinecone
+    await pineconeService.addTicketToPinecone(ticket._id.toString(), title, description);
 
     res.status(201).json({
       status: 'success',
@@ -59,7 +60,7 @@ app.get('/api/tickets', async (req, res) => {
     if (status) query.status = status;
     if (priority) query.priority = priority;
 
-    const tickets = await Ticket.find(query).sort({ createdAt: -1 });
+    const tickets = await mongoService.findTickets(query);
     res.status(200).json({
       status: 'success',
       data: tickets
@@ -76,14 +77,7 @@ app.get('/api/tickets', async (req, res) => {
 app.patch('/api/tickets/:id', async (req, res) => {
   try {
     const { status } = req.body;
-    const ticket = await Ticket.findByIdAndUpdate(
-      req.params.id,
-      { 
-        status,
-        updatedAt: Date.now()
-      },
-      { new: true }
-    );
+    const ticket = await mongoService.updateTicketStatus(req.params.id, status);
 
     if (!ticket) {
       return res.status(404).json({
@@ -104,6 +98,43 @@ app.patch('/api/tickets/:id', async (req, res) => {
   }
 });
 
+// Search tickets using Pinecone
+app.get('/api/tickets/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide a search query'
+      });
+    }
+
+    const results = await pineconeService.searchTickets(query);
+    
+    // Fetch full ticket details from MongoDB
+    const tickets = await Promise.all(
+      results.map(async (result) => {
+        const ticket = await mongoService.getTicketById(result.metadata.ticketId);
+        return {
+          ...ticket.toObject(),
+          similarity: result.score
+        };
+      })
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: tickets
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -113,21 +144,19 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   console.error(err.stack);
   res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: err.message,
-    status: 'error'
+    status: 'error',
+    message: err.message
   });
 });
 
 // Handle 404
 app.use((req, res) => {
   res.status(404).json({
-    error: 'Not Found',
-    message: 'The requested resource was not found',
-    status: 'error'
+    status: 'error',
+    message: 'Not Found'
   });
 });
 
