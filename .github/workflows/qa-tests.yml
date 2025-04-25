@@ -1,13 +1,19 @@
-# QA Test Workflow for main and dev branches
+# QA Test Workflow for main and Dev branches
 name: QA Tests
 
+# Explicitly define when this workflow should run
 on:
-  # Run on PRs targeting main or dev
+  # Run on any PR
   pull_request:
-    branches: [ main, dev ]
-  # Run when code is pushed to main or dev
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - Dev
+  # Run on pushes to main or Dev
   push:
-    branches: [ main, dev ]
+    branches:
+      - main
+      - Dev
 
 permissions:
   contents: read
@@ -15,7 +21,14 @@ permissions:
 
 jobs:
   qa-tests:
+    name: Run QA Tests
     runs-on: ubuntu-latest
+    
+    # Add debugging information
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      EVENT_NAME: ${{ github.event_name }}
     
     services:
       mongodb:
@@ -24,6 +37,14 @@ jobs:
           - 27017:27017
 
     steps:
+      - name: Print Debug Information
+        run: |
+          echo "Event name: $EVENT_NAME"
+          echo "Branch name: $BRANCH_NAME"
+          echo "PR number: $PR_NUMBER"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "GitHub base ref: ${{ github.base_ref }}"
+
       - uses: actions/checkout@v4
       
       - name: Setup Node.js
