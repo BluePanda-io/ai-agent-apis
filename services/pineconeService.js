@@ -2,7 +2,7 @@ const { Pinecone } = require('@pinecone-database/pinecone');
 const OpenAI = require('openai');
 const mockPineconeService = require('./mockPineconeService');
 const Logger = require('../utils/logger');
-
+ 
 // Use mock service if in test environment
 if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
   module.exports = mockPineconeService;
