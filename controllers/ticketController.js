@@ -1,5 +1,7 @@
 const mongoService = require('../services/mongoService');
 const pineconeService = require('../services/pineconeService');
+const Logger = require('../utils/logger');
+
 
 const ticketController = {
   createTicket: async (req, res) => {
@@ -14,7 +16,8 @@ const ticketController = {
       }
 
       // Create ticket in MongoDB
-      const ticket = await mongoService.createTicket(title, description);
+      const ticket = await mongoService.createTicket(title, description);      // Log ticket creation
+      Logger.debug(`Ticket created: ID=${ticket._id.toString()}, Title="${ticket.title}", Status=${ticket.status}`);
       
       // Add ticket to Pinecone
       const text = `${title} ${description}`;
@@ -132,15 +135,18 @@ const ticketController = {
         });
       }
 
+      Logger.info(`Searching for tickets with query: "${query}"`);
       const results = await pineconeService.searchTickets(query);
+      Logger.info(`Found ${results.length} similar tickets in Pinecone`);
       
       // Fetch full ticket details from MongoDB
       const tickets = await Promise.all(
         results.map(async (result) => {
           try {
+            // Try to find the ticket in MongoDB
             const ticket = await mongoService.getTicketById(result.id);
             if (!ticket) {
-              console.warn(`Ticket not found for ID: ${result.id}`);
+              Logger.warning(`Ticket not found in MongoDB for ID: ${result.id}`);
               return null;
             }
             return {
@@ -148,7 +154,7 @@ const ticketController = {
               similarity: result.score
             };
           } catch (error) {
-            console.error(`Error fetching ticket ${result.metadata.id}:`, error);
+            Logger.error(`Error fetching ticket ${result.id}:`, error);
             return null;
           }
         })
@@ -156,13 +162,14 @@ const ticketController = {
 
       // Filter out any null results
       const validTickets = tickets.filter(ticket => ticket !== null);
+      Logger.info(`Found ${validTickets.length} valid tickets in MongoDB`);
 
       res.status(200).json({
         status: 'success',
         data: validTickets
       });
     } catch (error) {
-      console.error('Search error:', error);
+      Logger.error('Search error:', error);
       res.status(500).json({
         status: 'error',
         message: error.message

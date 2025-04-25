@@ -3,8 +3,12 @@ const Logger = require('./utils/logger');
 
 const connectDB = async () => {
   try {
-    Logger.database(`Attempting to connect to MongoDB with URI: ${process.env.MONGODB_URI || 'mongodb://localhost:27017/sample_mflix'}`);
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sample_mflix');
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not defined');
+    }
+    Logger.database(`Attempting to connect to MongoDB with URI: ${mongoUri}`);
+    const conn = await mongoose.connect(mongoUri);
     Logger.success(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     Logger.error(`Error connecting to MongoDB: ${error.message}`);
