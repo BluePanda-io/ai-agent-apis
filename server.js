@@ -19,10 +19,14 @@ connectDB();
 app.use(express.json());
 app.use(apiLogger);
 
-// Add method override middleware
+// Add detailed request logging middleware
 app.use((req, res, next) => {
-  const method = req.headers['x-http-method-override'] || req.method;
-  req.method = method.toUpperCase();
+  Logger.debug('=== Request Details ===');
+  Logger.debug(`Original Method: ${req.method}`);
+  Logger.debug(`Original URL: ${req.originalUrl}`);
+  Logger.debug(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  Logger.debug(`Body: ${JSON.stringify(req.body, null, 2)}`);
+  Logger.debug('=====================');
   next();
 });
 
