@@ -7,8 +7,7 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
   module.exports = mockPineconeService;
 } else {
   const pinecone = new Pinecone({
-    apiKey: process.env.PINECONE_API_KEY,
-    environment: process.env.PINECONE_ENVIRONMENT
+    apiKey: process.env.PINECONE_API_KEY
   });
 
   const openai = new OpenAI({
@@ -38,7 +37,6 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
 
     addToPinecone: async (_id, text, metadata = {}) => {
       try {
-        const index = await pineconeService.getIndex();
         const vector = await pineconeService.generateEmbedding(text);
         
         await index.upsert([{
@@ -59,7 +57,6 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
 
     searchTickets: async (query, topK = 5) => {
       try {
-        const index = await pineconeService.getIndex();
         const vector = await pineconeService.generateEmbedding(query);
         
         const results = await index.query({
@@ -77,7 +74,6 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
 
     deleteFromPinecone: async (id) => {
       try {
-        const index = await pineconeService.getIndex();
         await index.deleteOne(id);
         return { success: true };
       } catch (error) {
