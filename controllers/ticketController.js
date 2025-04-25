@@ -1,48 +1,10 @@
 const mongoService = require('../services/mongoService');
 const pineconeService = require('../services/pineconeService');
-const Logger = require('../utils/logger');
 
 const ticketController = {
   createTicket: async (req, res) => {
     try {
-      Logger.debug('Create Ticket - Request Details:');
-      Logger.debug(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
-      Logger.debug(`Body: ${JSON.stringify(req.body, null, 2)}`);
-      
-      // Try to get data from different possible sources
-      let ticketData;
-      
-      if (req.headers['x-railway-edge']) {
-        // For Railway, try to parse the raw body if available
-        try {
-          let rawBody = '';
-          req.setEncoding('utf8');
-          for await (const chunk of req) {
-            rawBody += chunk;
-          }
-          if (rawBody) {
-            ticketData = JSON.parse(rawBody);
-          }
-        } catch (e) {
-          Logger.error('Failed to parse raw body:', e);
-        }
-      }
-      
-      // If we couldn't get data from raw body, try req.body
-      if (!ticketData) {
-        ticketData = req.body;
-      }
-      
-      // Final fallback to query parameters
-      if (!ticketData || Object.keys(ticketData).length === 0) {
-        ticketData = {
-          title: req.query.title,
-          description: req.query.description,
-          status: req.query.status || 'open'
-        };
-      }
-
-      const { title, description } = ticketData;
+      const { title, description } = req.body;
       
       if (!title || !description) {
         return res.status(400).json({
@@ -66,7 +28,6 @@ const ticketController = {
         data: ticket
       });
     } catch (error) {
-      Logger.error(`Create Ticket Error: ${error.message}`);
       res.status(500).json({
         status: 'error',
         message: error.message
