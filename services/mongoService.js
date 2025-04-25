@@ -6,9 +6,7 @@ const mongoService = {
       const ticket = await Ticket.create({
         title,
         description,
-        status: 'open',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        status: 'open'
       });
       return ticket;
     } catch (error) {
