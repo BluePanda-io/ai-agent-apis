@@ -78,7 +78,7 @@ const ticketController = {
         message: error.message
       });
     }
-  },
+  }, 
 
   updateTicket: async (req, res) => {
     try {
