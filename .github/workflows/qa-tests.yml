@@ -1,4 +1,4 @@
-# This workflow runs QA tests for pull requests to dev branch
+# QA Test Workflow for main and dev branches
 name: QA Tests
 
 on:
