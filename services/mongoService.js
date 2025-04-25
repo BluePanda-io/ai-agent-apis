@@ -25,6 +25,28 @@ const mongoService = {
       console.error('Error fetching ticket from MongoDB:', error);
       throw error;
     }
+  },
+
+  updateTicket: async (id, updateData) => {
+    try {
+      // Remove undefined values from updateData
+      const cleanUpdateData = Object.fromEntries(
+        Object.entries(updateData).filter(([, value]) => value !== undefined)
+      );
+
+      // Add updatedAt timestamp
+      cleanUpdateData.updatedAt = new Date();
+
+      const ticket = await Ticket.findByIdAndUpdate(
+        id,
+        { $set: cleanUpdateData },
+        { new: true, runValidators: true }
+      );
+      return ticket;
+    } catch (error) {
+      console.error('Error updating ticket in MongoDB:', error);
+      throw error;
+    }
   }
 };
 
