@@ -19,6 +19,13 @@ connectDB();
 app.use(express.json());
 app.use(apiLogger);
 
+// Add method override middleware
+app.use((req, res, next) => {
+  const method = req.headers['x-http-method-override'] || req.method;
+  req.method = method.toUpperCase();
+  next();
+});
+
 // Routes
 app.use('/', generalRoutes);
 app.use('/api/tickets', ticketRoutes);

@@ -83,7 +83,7 @@ async function testAPI() {
       assert.strictEqual(deleteResponse.status, 200);
       assert.strictEqual(deleteData.status, 'success');
       Logger.success('Ticket deletion test passed\n');
-    }
+    } 
 
     Logger.success('All tests passed successfully! 🎉');
   } catch (error) {
