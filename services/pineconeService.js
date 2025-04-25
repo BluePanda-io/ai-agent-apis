@@ -30,23 +30,23 @@ const pineconeService = {
     }
   },
 
-  addTicketToPinecone: async (ticketId, title, description) => {
+  addToPinecone: async (_id, text, metadata = {}) => {
     try {
       const index = await pineconeService.getIndex();
-      const text = `${title} ${description}`;
       const vector = await pineconeService.generateEmbedding(text);
       
       await index.upsert([{
-        id: ticketId,
+        id: _id,
         values: vector,
         metadata: {
-          title,
-          description,
-          ticketId
+          text: text,
+          ...metadata
         }
       }]);
+
+
       
-      return { success: true, ticketId };
+      return { success: true, _id };
     } catch (error) {
       console.error('Error adding ticket to Pinecone:', error);
       throw error;

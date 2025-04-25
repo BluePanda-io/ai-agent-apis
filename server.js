@@ -37,7 +37,14 @@ app.post('/api/tickets', async (req, res) => {
     const ticket = await mongoService.createTicket(title, description);
     
     // Add ticket to Pinecone
-    await pineconeService.addTicketToPinecone(ticket._id.toString(), title, description);
+    const text = `${title} ${description}`;
+    const metadata = {
+      type: 'ticket',
+    };
+    await pineconeService.addToPinecone(ticket._id.toString(), text,metadata);
+
+    // Save the MongoDB ticket
+    await ticket.save();
 
     res.status(201).json({
       status: 'success',
@@ -115,19 +122,32 @@ app.get('/api/tickets/search', async (req, res) => {
     // Fetch full ticket details from MongoDB
     const tickets = await Promise.all(
       results.map(async (result) => {
-        const ticket = await mongoService.getTicketById(result.metadata.ticketId);
-        return {
-          ...ticket.toObject(),
-          similarity: result.score
-        };
+        try {
+          const ticket = await mongoService.getTicketById(result.id);
+          if (!ticket) {
+            console.warn(`Ticket not found for ID: ${result.id}`);
+            return null;
+          }
+          return {
+            ...ticket.toObject(),
+            similarity: result.score
+          };
+        } catch (error) {
+          console.error(`Error fetching ticket ${result.metadata.id}:`, error);
+          return null;
+        }
       })
     );
 
+    // Filter out any null results
+    const validTickets = tickets.filter(ticket => ticket !== null);
+
     res.status(200).json({
       status: 'success',
-      data: tickets
+      data: validTickets
     });
   } catch (error) {
+    console.error('Search error:', error);
     res.status(500).json({
       status: 'error',
       message: error.message
