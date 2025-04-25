@@ -19,7 +19,27 @@ connectDB();
 app.use(express.json());
 app.use(apiLogger);
 
-// Add detailed request logging middleware
+// Railway-specific middleware to handle edge proxy
+app.use((req, res, next) => {
+  // Check if we're on Railway by looking for Railway-specific headers
+  if (req.headers['x-railway-edge']) {
+    // Preserve original method from headers if available
+    const originalMethod = 
+      req.headers['x-http-method-override'] || 
+      req.headers['x-http-method'] || 
+      req.headers['x-method-override'] || 
+      req.method;
+    
+    // Force the method to be the original method
+    req.method = originalMethod.toUpperCase();
+    
+    // Log the method transformation for debugging
+    Logger.debug(`Railway detected - Original method: ${originalMethod}, Final method: ${req.method}`);
+  }
+  next();
+});
+
+// Add detailed request logging
 app.use((req, res, next) => {
   Logger.debug('=== Request Details ===');
   Logger.debug(`Original Method: ${req.method}`);
