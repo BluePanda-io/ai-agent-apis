@@ -40,8 +40,8 @@ jobs:
         env:
           MONGODB_URI: mongodb://localhost:27017/test
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
           PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          NODE_ENV: production
           
       - name: Run QA tests
         run: |
@@ -50,8 +50,8 @@ jobs:
         env:
           MONGODB_URI: mongodb://localhost:27017/test
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
           PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          NODE_ENV: production
           
       - name: Report test results
         if: always()
