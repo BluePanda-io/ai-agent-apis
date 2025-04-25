@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
   });
-
+ 
   const index = pinecone.index(process.env.PINECONE_INDEX_NAME);
 
   const pineconeService = {
