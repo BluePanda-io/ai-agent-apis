@@ -1,0 +1,72 @@
+# QA Test Workflow for main and dev branches
+name: QA Tests
+
+on:
+  # Run on PRs targeting main or dev
+  pull_request:
+    branches: [ main, dev ]
+  # Run when code is pushed to main or dev
+  push:
+    branches: [ main, dev ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  qa-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Start API server
+        run: |
+          echo "Starting API server..."
+          npm start &
+          echo "Waiting for server to be ready..."
+          sleep 15
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NODE_ENV: production
+          
+      - name: Run QA tests
+        run: |
+          echo "Running QA tests..."
+          node qa-test.js
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NODE_ENV: production
+          
+      - name: Report test results
+        if: always()
+        run: |
+          echo "::group::Test Results"
+          echo "Test execution completed"
+          if [ -f test-results.log ]; then
+            cat test-results.log
+          else
+            echo "No test results file found"
+          fi
+          echo "::endgroup::" 

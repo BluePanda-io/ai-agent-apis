@@ -1,67 +1,40 @@
 require('dotenv').config();
 const express = require('express');
+const connectDB = require('./db');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const apiLogger = require('./middleware/apiLogger');
+const Logger = require('./utils/logger');
+
+// Import routes
+const ticketRoutes = require('./routes/ticketRoutes');
+const generalRoutes = require('./routes/generalRoutes');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Connect to MongoDB
+connectDB();
+
+// Force HTTPS redirect for Railway
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
 // Middleware
 app.use(express.json());
+app.use(apiLogger);
 
 // Routes
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Hello World!',
-    status: 'success',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Test GET endpoint
-app.get('/api/test', (req, res) => {
-  res.json({
-    message: 'Test endpoint working!',
-    status: 'success',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Test POST endpoint
-app.post('/api/test', (req, res) => {
-  const { message } = req.body;
-  
-  res.json({
-    received: message || 'No message provided',
-    status: 'success',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
-});
+app.use('/', generalRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: err.message,
-    status: 'error'
-  });
-});
-
-// Handle 404
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: 'The requested resource was not found',
-    status: 'error'
-  });
-});
+app.use(errorHandler);
+app.use(notFoundHandler);
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  Logger.success(`Server running at http://localhost:${port}`);
 }); 
