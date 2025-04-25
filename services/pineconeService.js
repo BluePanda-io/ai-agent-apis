@@ -1,6 +1,7 @@
 const { Pinecone } = require('@pinecone-database/pinecone');
 const OpenAI = require('openai');
 const mockPineconeService = require('./mockPineconeService');
+const Logger = require('../utils/logger');
 
 // Use mock service if in test environment
 if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
@@ -39,8 +40,11 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
       try {
         const vector = await pineconeService.generateEmbedding(text);
         
+        // Ensure _id is a string
+        const id = _id.toString();
+        
         await index.upsert([{
-          id: _id,
+          id,
           values: vector,
           metadata: {
             text: text,
@@ -48,9 +52,10 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
           }
         }]);
 
-        return { success: true, _id };
+        Logger.debug(`Added ticket to Pinecone with ID: ${id}`);
+        return { success: true, _id: id };
       } catch (error) {
-        console.error('Error adding ticket to Pinecone:', error);
+        Logger.error('Error adding ticket to Pinecone:', error);
         throw error;
       }
     },
@@ -78,6 +83,17 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
         return { success: true };
       } catch (error) {
         console.error('Error deleting ticket from Pinecone:', error);
+        throw error;
+      }
+    },
+
+    deleteAllVectors: async () => {
+      try {
+        await index.deleteAll();
+        Logger.debug('Successfully deleted all vectors from Pinecone');
+        return { success: true };
+      } catch (error) {
+        Logger.error('Error deleting all vectors from Pinecone:', error);
         throw error;
       }
     }
