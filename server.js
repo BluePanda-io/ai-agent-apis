@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const connectDB = require('./db');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
