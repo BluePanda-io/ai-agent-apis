@@ -69,6 +69,17 @@ const pineconeService = {
       console.error('Error searching tickets in Pinecone:', error);
       throw error;
     }
+  },
+
+  deleteFromPinecone: async (id) => {
+    try {
+      const index = await pineconeService.getIndex();
+      await index.deleteOne(id);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting ticket from Pinecone:', error);
+      throw error;
+    }
   }
 };
 

@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
+const Logger = require('./utils/logger');
 
 const connectDB = async () => {
   try {
-    console.log('Attempting to connect to MongoDB with URI:', process.env.MONGODB_URI || 'mongodb://localhost:27017/sample_mflix');
+    Logger.database(`Attempting to connect to MongoDB with URI: ${process.env.MONGODB_URI || 'mongodb://localhost:27017/sample_mflix'}`);
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sample_mflix');
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    Logger.success(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    Logger.error(`Error connecting to MongoDB: ${error.message}`);
     process.exit(1);
   }
 };
