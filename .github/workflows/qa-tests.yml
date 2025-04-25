@@ -1,12 +1,15 @@
+# This workflow runs QA tests for pull requests to dev branch
 name: QA Tests
 
 on:
   pull_request:
-    branches:
-      - dev
+    branches: [ main, dev ]
   push:
-    branches:
-      - dev
+    branches: [ main, dev ]
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   qa-tests:
@@ -25,6 +28,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
           
       - name: Install dependencies
         run: npm install
@@ -37,6 +41,15 @@ jobs:
           MONGODB_URI: mongodb://localhost:27017/test
           
       - name: Run QA tests
-        run: node qa-test.js
+        run: |
+          echo "Running QA tests..."
+          node qa-test.js
         env:
-          MONGODB_URI: mongodb://localhost:27017/test 
+          MONGODB_URI: mongodb://localhost:27017/test
+          
+      - name: Report test results
+        if: always()
+        run: |
+          echo "::group::Test Results"
+          cat test-results.log || echo "No test results file found"
+          echo "::endgroup::" 
