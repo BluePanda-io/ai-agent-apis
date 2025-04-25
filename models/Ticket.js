@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
 const ticketSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    default: () => uuidv4()
+  },
   title: {
     type: String,
     required: [true, 'Please provide a title'],
@@ -13,22 +18,16 @@ const ticketSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'in-progress', 'closed'],
+    enum: ['open', 'in_progress', 'closed'],
     default: 'open'
   },
   priority: {
     type: String,
     enum: ['low', 'medium', 'high'],
     default: 'medium'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
-}, { collection: 'tickets_test' });
+}, {
+  timestamps: true
+});
 
 module.exports = mongoose.model('Ticket', ticketSchema); 
