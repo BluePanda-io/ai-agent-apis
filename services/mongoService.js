@@ -17,6 +17,16 @@ const mongoService = {
     }
   },
 
+  findTickets: async (query = {}) => {
+    try {
+      const tickets = await Ticket.find(query);
+      return tickets;
+    } catch (error) {
+      console.error('Error finding tickets in MongoDB:', error);
+      throw error;
+    }
+  },
+
   getTicketById: async (id) => {
     try {
       const ticket = await Ticket.findById(id);
@@ -45,6 +55,16 @@ const mongoService = {
       return ticket;
     } catch (error) {
       console.error('Error updating ticket in MongoDB:', error);
+      throw error;
+    }
+  },
+
+  deleteTicket: async (id) => {
+    try {
+      const ticket = await Ticket.findByIdAndDelete(id);
+      return ticket;
+    } catch (error) {
+      console.error('Error deleting ticket from MongoDB:', error);
       throw error;
     }
   }

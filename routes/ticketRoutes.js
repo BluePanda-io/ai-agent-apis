@@ -17,4 +17,7 @@ router.put('/:id', ticketController.updateTicket);
 // Search tickets using Pinecone
 router.get('/search', ticketController.searchTickets);
 
+// Delete a ticket
+router.delete('/:id', ticketController.deleteTicket);
+
 module.exports = router; 

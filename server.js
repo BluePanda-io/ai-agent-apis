@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const connectDB = require('./db');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const apiLogger = require('./middleware/apiLogger');
+const Logger = require('./utils/logger');
 
 // Import routes
 const ticketRoutes = require('./routes/ticketRoutes');
@@ -15,6 +17,7 @@ connectDB();
 
 // Middleware
 app.use(express.json());
+app.use(apiLogger);
 
 // Routes
 app.use('/', generalRoutes);
@@ -25,5 +28,5 @@ app.use(errorHandler);
 app.use(notFoundHandler);
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  Logger.success(`Server running at http://localhost:${port}`);
 }); 

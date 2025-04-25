@@ -171,6 +171,36 @@ const ticketController = {
         message: error.message
       });
     }
+  },
+
+  deleteTicket: async (req, res) => {
+    try {
+      const ticketId = req.params.id;
+
+      // Delete from MongoDB
+      const deletedTicket = await mongoService.deleteTicket(ticketId);
+
+      if (!deletedTicket) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Ticket not found'
+        });
+      }
+
+      // Delete from Pinecone
+      await pineconeService.deleteFromPinecone(ticketId);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Ticket deleted successfully',
+        data: deletedTicket
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
   }
 };
 
