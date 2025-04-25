@@ -1,0 +1,42 @@
+name: QA Tests
+
+on:
+  pull_request:
+    branches:
+      - dev
+  push:
+    branches:
+      - dev
+
+jobs:
+  qa-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Start API server
+        run: |
+          npm start &
+          sleep 10
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          
+      - name: Run QA tests
+        run: node qa-test.js
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
