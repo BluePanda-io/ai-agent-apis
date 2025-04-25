@@ -20,6 +20,10 @@ const ticketSchema = new mongoose.Schema({
     type: String,
     enum: ['low', 'medium', 'high'],
     default: 'medium'
+  },
+  linear_id: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

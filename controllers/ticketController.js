@@ -6,7 +6,7 @@ const Logger = require('../utils/logger');
 const ticketController = {
   createTicket: async (req, res) => {
     try {
-      const { title, description } = req.body;
+      const { title, description, linear_id } = req.body;
       
       if (!title || !description) {
         return res.status(400).json({
@@ -16,7 +16,7 @@ const ticketController = {
       }
 
       // Create ticket in MongoDB
-      const ticket = await mongoService.createTicket(title, description);      // Log ticket creation
+      const ticket = await mongoService.createTicket(title, description, linear_id);      // Log ticket creation
       Logger.debug(`Ticket created: ID=${ticket._id.toString()}, Title="${ticket.title}", Status=${ticket.status}`);
       
       // Add ticket to Pinecone
@@ -85,7 +85,7 @@ const ticketController = {
 
   updateTicket: async (req, res) => {
     try {
-      const { title, description, status, priority } = req.body;
+      const { title, description, status, priority, linear_id } = req.body;
       const ticketId = req.params.id;
 
       // Update ticket in MongoDB
@@ -93,7 +93,8 @@ const ticketController = {
         title,
         description,
         status,
-        priority
+        priority,
+        linear_id
       });
 
       if (!updatedTicket) {

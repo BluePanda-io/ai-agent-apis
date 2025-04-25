@@ -1,12 +1,13 @@
 const Ticket = require('../models/Ticket');
 
 const mongoService = {
-  createTicket: async (title, description) => {
+  createTicket: async (title, description, linear_id) => {
     try {
       const ticket = await Ticket.create({
         title,
         description,
-        status: 'open'
+        status: 'open',
+        linear_id
       });
       return ticket;
     } catch (error) {
