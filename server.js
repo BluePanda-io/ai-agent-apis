@@ -15,8 +15,44 @@ const port = process.env.PORT || 3000;
 // Connect to MongoDB
 connectDB();
 
-// Middleware
-app.use(express.json());
+// CORS headers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// Body parsing middleware
+app.use(express.json({ strict: false, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Raw body parsing for Railway
+app.use((req, res, next) => {
+  if (req.headers['x-railway-edge'] && !req.body && req.method === 'POST') {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      try {
+        req.body = JSON.parse(data);
+      } catch (e) {
+        Logger.error('Failed to parse raw body:', e);
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
 app.use(apiLogger);
 
 // Railway-specific middleware to handle edge proxy
@@ -45,7 +81,8 @@ app.use((req, res, next) => {
   Logger.debug(`Original Method: ${req.method}`);
   Logger.debug(`Original URL: ${req.originalUrl}`);
   Logger.debug(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
-  Logger.debug(`Body: ${JSON.stringify(req.body, null, 2)}`);
+  Logger.debug(`Raw Body: ${req.rawBody || 'none'}`);
+  Logger.debug(`Parsed Body: ${JSON.stringify(req.body, null, 2)}`);
   Logger.debug('=====================');
   next();
 });
