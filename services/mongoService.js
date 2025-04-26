@@ -1,5 +1,5 @@
 const Ticket = require('../models/Ticket');
-
+const Logger = require('../utils/logger');
 const mongoService = {
   createTicket: async (title, description, linear_id) => {
     try {
@@ -29,6 +29,29 @@ const mongoService = {
   getTicketById: async (id) => {
     try {
       const ticket = await Ticket.findById(id);
+      return ticket;
+    } catch (error) {
+      console.error('Error fetching ticket from MongoDB:', error);
+      throw error;
+    }
+  },
+
+  getTicketByIdOrLinearId: async (id) => {
+    try {
+      let ticket;
+      try {
+        // First try to find by MongoDB ID
+        ticket = await Ticket.findById(id);
+      } catch (error) {
+        // If error is due to invalid ObjectId format, ticket will remain undefined
+        Logger.debug(`Invalid MongoDB ID format: ${id}, will try Linear ID instead`);
+      }
+      
+      // If not found by MongoDB ID, try to find by Linear ID
+      if (!ticket) {
+        ticket = await Ticket.findOne({ linear_id: id });
+      }
+      
       return ticket;
     } catch (error) {
       console.error('Error fetching ticket from MongoDB:', error);

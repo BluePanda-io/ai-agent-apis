@@ -17,6 +17,9 @@ router.put('/:id', ticketController.updateTicket);
 // Search tickets using Pinecone
 router.get('/search', ticketController.searchTickets);
 
+// Get ticket by MongoDB ID or Linear ID
+router.get('/:id', ticketController.getTicketByIdOrLinearId);
+
 // Delete a ticket
 router.delete('/:id', ticketController.deleteTicket);
 
