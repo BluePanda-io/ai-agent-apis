@@ -206,6 +206,30 @@ const ticketController = {
         message: error.message
       });
     }
+  },
+
+  getTicketByIdOrLinearId: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const ticket = await mongoService.getTicketByIdOrLinearId(id);
+
+      if (!ticket) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Ticket not found'
+        });
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: ticket
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
   }
 };
 
