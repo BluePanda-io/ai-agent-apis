@@ -43,13 +43,17 @@ if (process.env.NODE_ENV === 'test' && process.env.MOCK_SERVICES === 'true') {
         // Ensure _id is a string
         const id = _id.toString();
         
+        // Clean metadata to ensure all values are valid
+        const cleanMetadata = {
+          text: text,
+          type: metadata.type || 'ticket',
+          identifier: metadata.identifier || ''
+        };
+        
         await index.upsert([{
           id,
           values: vector,
-          metadata: {
-            text: text,
-            ...metadata
-          }
+          metadata: cleanMetadata
         }]);
 
         Logger.debug(`Added ticket to Pinecone with ID: ${id}`);

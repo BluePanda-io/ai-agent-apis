@@ -6,23 +6,26 @@ const Logger = require('../utils/logger');
 const ticketController = {
   createTicket: async (req, res) => {
     try {
-      const { title, description, linear_id } = req.body;
+      const { title, description, linear_id, identifier } = req.body;
       
       if (!title || !description) {
         return res.status(400).json({
           status: 'error',
-          message: 'Please provide both title and description'
+          message: 'Please provide title and description'
         });
       }
 
       // Create ticket in MongoDB
-      const ticket = await mongoService.createTicket(title, description, linear_id);      // Log ticket creation
-      Logger.debug(`Ticket created: ID=${ticket._id.toString()}, Title="${ticket.title}", Status=${ticket.status}`);
+      const ticket = await mongoService.createTicket(title, description, linear_id, identifier);
+      
+      // Log ticket creation
+      Logger.debug(`Ticket created: ID=${ticket._id.toString()}, Identifier=${ticket.identifier || 'none'}, Title="${ticket.title}", Status=${ticket.status}`);
       
       // Add ticket to Pinecone
-      const text = `${title} ${description}`;
+      const text = `${ticket.identifier ? ticket.identifier + ' ' : ''}${title} ${description}`;
       const metadata = {
         type: 'ticket',
+        identifier: ticket.identifier || null
       };
       await pineconeService.addToPinecone(ticket._id.toString(), text, metadata);
 
@@ -40,11 +43,12 @@ const ticketController = {
 
   getTickets: async (req, res) => {
     try {
-      const { status, priority } = req.query;
+      const { status, priority, identifier } = req.query;
       const query = {};
       
       if (status) query.status = status;
       if (priority) query.priority = priority;
+      if (identifier) query.identifier = identifier;
 
       const tickets = await mongoService.findTickets(query);
       res.status(200).json({
@@ -85,7 +89,7 @@ const ticketController = {
 
   updateTicket: async (req, res) => {
     try {
-      const { title, description, status, priority, linear_id } = req.body;
+      const { title, description, status, priority, linear_id, identifier } = req.body;
       const ticketId = req.params.id;
 
       // Update ticket in MongoDB
@@ -94,7 +98,8 @@ const ticketController = {
         description,
         status,
         priority,
-        linear_id
+        linear_id,
+        identifier
       });
 
       if (!updatedTicket) {
@@ -105,10 +110,11 @@ const ticketController = {
       }
 
       // Update the vector in Pinecone with new text
-      if (title || description) {
-        const text = `${updatedTicket.title} ${updatedTicket.description}`;
+      if (title || description || identifier) {
+        const text = `${updatedTicket.identifier ? updatedTicket.identifier + ' ' : ''}${updatedTicket.title} ${updatedTicket.description}`;
         await pineconeService.addToPinecone(ticketId, text, {
-          type: 'ticket'
+          type: 'ticket',
+          identifier: updatedTicket.identifier || null
         });
       }
 
