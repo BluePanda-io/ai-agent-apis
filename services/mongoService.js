@@ -1,13 +1,14 @@
 const Ticket = require('../models/Ticket');
 const Logger = require('../utils/logger');
 const mongoService = {
-  createTicket: async (title, description, linear_id) => {
+  createTicket: async (title, description, linear_id, identifier) => {
     try {
       const ticket = await Ticket.create({
         title,
         description,
         status: 'open',
-        linear_id
+        linear_id,
+        identifier
       });
       return ticket;
     } catch (error) {
@@ -43,13 +44,18 @@ const mongoService = {
         // First try to find by MongoDB ID
         ticket = await Ticket.findById(id);
       } catch (error) {
-        // If error is due to invalid ObjectId format, ticket will remain undefined
-        Logger.debug(`Invalid MongoDB ID format: ${id}, will try Linear ID instead`);
+        // If error is due to invalid ObjectId format, try other identifiers
+        Logger.debug(`Invalid MongoDB ID format: ${id}, will try other identifiers`);
       }
       
-      // If not found by MongoDB ID, try to find by Linear ID
+      // If not found by MongoDB ID, try to find by Linear ID or identifier
       if (!ticket) {
-        ticket = await Ticket.findOne({ linear_id: id });
+        ticket = await Ticket.findOne({
+          $or: [
+            { linear_id: id },
+            { identifier: id }
+          ]
+        });
       }
       
       return ticket;
