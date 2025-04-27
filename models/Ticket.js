@@ -1,12 +1,25 @@
 const mongoose = require('mongoose');
 
+const commentSchema = new mongoose.Schema({
+  text: {
+    type: String,
+    required: true
+  },
+  author: {
+    type: String,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const ticketSchema = new mongoose.Schema({
   identifier: {
     type: String,
     required: false,
-    unique: true,
-    trim: true,
-    match: [/^DG-\d{1,5}$/, 'Identifier must be in the format DG-XXX where X is 1-5 digits']
+    trim: true
   },
   title: {
     type: String,
@@ -31,9 +44,16 @@ const ticketSchema = new mongoose.Schema({
   linear_id: {
     type: String,
     trim: true
+  },
+  comments: [commentSchema],
+  contextualChange: {
+    type: String,
+    default: 'Initial ticket creation'
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  strict: false,
+  strictQuery: false
 });
 
 module.exports = mongoose.model('Ticket', ticketSchema); 
