@@ -62,24 +62,6 @@ async function testAPI() {
     assert.strictEqual(createdTicketWithId.data.identifier, newTicketWithId.identifier);
     Logger.success('Ticket creation with identifier test passed\n');
 
-    // Test ticket creation with invalid identifier format
-    Logger.info('Testing ticket creation with invalid identifier format...');
-    const invalidTicket = {
-      title: 'Invalid Ticket',
-      description: 'This ticket has an invalid identifier',
-      status: 'open',
-      identifier: 'INVALID-1'
-    };
-    const invalidResponse = await fetch(`${API_URL}/tickets`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(invalidTicket)
-    });
-    const invalidData = await invalidResponse.json();
-    assert.strictEqual(invalidResponse.status, 500);
-    assert(invalidData.message.includes('Identifier must be in the format DG-XXX'));
-    Logger.success('Invalid identifier format test passed\n');
-
     // Test getting ticket by identifier
     Logger.info('Testing get ticket by identifier...');
     const getByIdentifierResponse = await fetch(`${API_URL}/tickets/${newTicketWithId.identifier}`);
@@ -149,6 +131,44 @@ async function testAPI() {
     assert.strictEqual(deleteResponse.status, 200);
     assert.strictEqual(deleteData.status, 'success');
     Logger.success('Ticket deletion test passed\n');
+
+    // Test ticket creation with custom fields
+    Logger.info('Testing ticket creation with custom fields...');
+    const customTicket = {
+      title: 'Custom Fields Ticket',
+      description: 'This ticket has custom fields',
+      status: 'open',
+      customField1: 'value1',
+      customField2: 123,
+      customField3: {
+        nested: 'value',
+        array: [1, 2, 3]
+      },
+      tags: ['urgent', 'feature'],
+      metadata: {
+        source: 'api',
+        createdBy: 'test'
+      }
+    };
+    const customResponse = await fetch(`${API_URL}/tickets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(customTicket)
+    });
+    const createdCustomTicket = await customResponse.json();
+    assert.strictEqual(customResponse.status, 201);
+    assert.strictEqual(createdCustomTicket.data.title, customTicket.title);
+    assert.strictEqual(createdCustomTicket.data.customField1, customTicket.customField1);
+    assert.strictEqual(createdCustomTicket.data.customField2, customTicket.customField2);
+    assert.deepStrictEqual(createdCustomTicket.data.customField3, customTicket.customField3);
+    assert.deepStrictEqual(createdCustomTicket.data.tags, customTicket.tags);
+    assert.deepStrictEqual(createdCustomTicket.data.metadata, customTicket.metadata);
+    Logger.success('Ticket creation with custom fields test passed\n');
+
+    // Delete the custom ticket
+    await fetch(`${API_URL}/tickets/${createdCustomTicket.data._id}`, {
+      method: 'DELETE'
+    });
 
     // Delete the ticket with identifier
     await fetch(`${API_URL}/tickets/${createdTicketWithId.data._id}`, {

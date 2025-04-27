@@ -1,15 +1,9 @@
 const Ticket = require('../models/Ticket');
 const Logger = require('../utils/logger');
 const mongoService = {
-  createTicket: async (title, description, linear_id, identifier) => {
+  createTicket: async (ticketData) => {
     try {
-      const ticket = await Ticket.create({
-        title,
-        description,
-        status: 'open',
-        linear_id,
-        identifier
-      });
+      const ticket = await Ticket.create(ticketData);
       return ticket;
     } catch (error) {
       console.error('Error creating ticket in MongoDB:', error);

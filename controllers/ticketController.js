@@ -1,12 +1,14 @@
 const mongoService = require('../services/mongoService');
 const pineconeService = require('../services/pineconeService');
+const llmProcessingService = require('../services/llmProcessingService');
+const contextualChangeService = require('../services/contextualChangeService');
 const Logger = require('../utils/logger');
 
 
 const ticketController = {
   createTicket: async (req, res) => {
     try {
-      const { title, description, linear_id, identifier } = req.body;
+      const { title, description } = req.body;
       
       if (!title || !description) {
         return res.status(400).json({
@@ -15,19 +17,25 @@ const ticketController = {
         });
       }
 
-      // Create ticket in MongoDB
-      const ticket = await mongoService.createTicket(title, description, linear_id, identifier);
+      // Create ticket in MongoDB with all provided fields
+      const ticket = await mongoService.createTicket({
+        ...req.body,
+        status: req.body.status || 'open',
+        priority: req.body.priority || 'medium'
+      });
       
       // Log ticket creation
       Logger.debug(`Ticket created: ID=${ticket._id.toString()}, Identifier=${ticket.identifier || 'none'}, Title="${ticket.title}", Status=${ticket.status}`);
       
-      // Add ticket to Pinecone
-      const text = `${ticket.identifier ? ticket.identifier + ' ' : ''}${title} ${description}`;
+      // Process ticket with LLM for better vectorization
+      const processedText = await llmProcessingService.processTicketForVectorization(ticket);
+      
+      // Add ticket to Pinecone with processed text
       const metadata = {
         type: 'ticket',
         identifier: ticket.identifier || null
       };
-      await pineconeService.addToPinecone(ticket._id.toString(), text, metadata);
+      await pineconeService.addToPinecone(ticket._id.toString(), processedText, metadata);
 
       res.status(201).json({
         status: 'success',
@@ -89,17 +97,48 @@ const ticketController = {
 
   updateTicket: async (req, res) => {
     try {
-      const { title, description, status, priority, linear_id, identifier } = req.body;
       const ticketId = req.params.id;
+      const oldTicket = await mongoService.getTicketById(ticketId);
 
-      // Update ticket in MongoDB
+      if (!oldTicket) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Ticket not found'
+        });
+      }
+
+      // Handle comments separately
+      let updateData = { ...req.body };
+      if (req.body.comments) {
+        // Ensure comments is an array
+        const newComments = Array.isArray(req.body.comments) ? req.body.comments : [req.body.comments];
+        // Add timestamps to new comments
+        const commentsWithTimestamps = newComments.map(comment => ({
+          ...comment,
+          createdAt: new Date()
+        }));
+        
+        // Get existing comments
+        const existingComments = oldTicket.comments || [];
+        
+        // Combine existing and new comments
+        updateData = {
+          ...req.body,
+          comments: [...existingComments, ...commentsWithTimestamps]
+        };
+        delete updateData.$push;
+      }
+
+      // Analyze changes and generate contextual description
+      const contextualChange = await contextualChangeService.analyzeChanges(
+        oldTicket.toObject(),
+        { ...oldTicket.toObject(), ...req.body }
+      );
+
+      // Update ticket in MongoDB with all provided fields and contextual change
       const updatedTicket = await mongoService.updateTicket(ticketId, {
-        title,
-        description,
-        status,
-        priority,
-        linear_id,
-        identifier
+        ...updateData,
+        contextualChange
       });
 
       if (!updatedTicket) {
@@ -109,14 +148,14 @@ const ticketController = {
         });
       }
 
-      // Update the vector in Pinecone with new text
-      if (title || description || identifier) {
-        const text = `${updatedTicket.identifier ? updatedTicket.identifier + ' ' : ''}${updatedTicket.title} ${updatedTicket.description}`;
-        await pineconeService.addToPinecone(ticketId, text, {
-          type: 'ticket',
-          identifier: updatedTicket.identifier || null
-        });
-      }
+      // Process updated ticket with LLM for better vectorization
+      const processedText = await llmProcessingService.processTicketForVectorization(updatedTicket);
+      
+      // Update the vector in Pinecone with processed text
+      await pineconeService.addToPinecone(ticketId, processedText, {
+        type: 'ticket',
+        identifier: updatedTicket.identifier || null
+      });
 
       res.status(200).json({
         status: 'success',
