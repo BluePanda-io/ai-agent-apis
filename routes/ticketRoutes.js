@@ -18,7 +18,7 @@ router.put('/:id', ticketController.updateTicket);
 router.get('/search', ticketController.searchTickets);
 
 // Get ticket by MongoDB ID or Linear ID
-router.get('/:id', ticketController.getTicketByIdOrLinearId);
+router.get('/ticket', ticketController.getTicketByIdOrLinearId);
 
 // Delete a ticket
 router.delete('/:id', ticketController.deleteTicket);
