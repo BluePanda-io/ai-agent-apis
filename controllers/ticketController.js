@@ -8,12 +8,12 @@ const Logger = require('../utils/logger');
 const ticketController = {
   createTicket: async (req, res) => {
     try {
-      const { title, description } = req.body;
+      const { title } = req.body;
       
-      if (!title || !description) {
+      if (!title) {
         return res.status(400).json({
           status: 'error',
-          message: 'Please provide title and description'
+          message: 'Please provide a title'
         });
       }
 

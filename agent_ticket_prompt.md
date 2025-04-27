@@ -63,12 +63,7 @@ Given unstructured ticket information, extract the relevant fields and output a 
 **Instruction:**
 Given a search query or unstructured text, extract the search terms and output a JSON object suitable for a GET request with query parameters.
 
-**Example Output:**
-```json
-{
-  "query": "<search text or keywords>"
-}
-```
+
 
 ## General Guidelines
 - Always try to extract and include `title`, `description`, `comments` (as an array of objects), `linear_id`, and `identifier` if present.
