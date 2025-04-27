@@ -51,12 +51,26 @@ const ticketController = {
 
   getTickets: async (req, res) => {
     try {
-      const { status, priority, identifier } = req.query;
+      const { status, priority, identifier, id } = req.query;
       const query = {};
       
       if (status) query.status = status;
       if (priority) query.priority = priority;
       if (identifier) query.identifier = identifier;
+      if (id) {
+        // If ID is provided, try to find a single ticket by ID
+        const ticket = await mongoService.getTicketByIdOrLinearId(id);
+        if (!ticket) {
+          return res.status(404).json({
+            status: 'error',
+            message: 'Ticket not found'
+          });
+        }
+        return res.status(200).json({
+          status: 'success',
+          data: ticket
+        });
+      }
 
       const tickets = await mongoService.findTickets(query);
       res.status(200).json({
@@ -255,7 +269,16 @@ const ticketController = {
 
   getTicketByIdOrLinearId: async (req, res) => {
     try {
-      const id = req.params.id;
+      const { id } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Please provide an ID in the query parameters'
+        });
+      }
+
+      Logger.debug(`Getting ticket by ID or Linear ID: ${id}`);
       const ticket = await mongoService.getTicketByIdOrLinearId(id);
 
       if (!ticket) {

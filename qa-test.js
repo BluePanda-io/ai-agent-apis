@@ -64,7 +64,7 @@ async function testAPI() {
 
     // Test getting ticket by identifier
     Logger.info('Testing get ticket by identifier...');
-    const getByIdentifierResponse = await fetch(`${API_URL}/tickets/${newTicketWithId.identifier}`);
+    const getByIdentifierResponse = await fetch(`${API_URL}/tickets?id=${newTicketWithId.identifier}`);
     const ticketByIdentifier = await getByIdentifierResponse.json();
     assert.strictEqual(getByIdentifierResponse.status, 200);
     assert.strictEqual(ticketByIdentifier.data.identifier, newTicketWithId.identifier);
